@@ -1,0 +1,40 @@
+cat << 'EOF' > .gitignore
+# Python / FastAPI
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.Python
+env/
+.env
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+*.egg
+dist/
+build/
+develop-eggs/
+sdist/
+wheels/
+*.py[cod]
+*$py.class
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+.secret
+secrets.json
+
+# IDEs & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+EOF
+
+# Others
+prd.md
