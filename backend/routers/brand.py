@@ -23,16 +23,12 @@ class BrandResponse(BaseModel):
     brands: list[BrandItem]
 
 
-BRAND_PROMPT = """Dari transkrip video YouTube berikut, cari semua merek, brand, atau produk yang disebut.
+BRAND_PROMPT = """Cari brand/merek dari transkrip ini. Output JSON array saja, tanpa teks lain.
 
-Kembalikan dalam format JSON array. Setiap item punya:
-- brand: nama merek
-- context: konteks singkat
-- timestamp_seconds: detik kemunculan
-
-Contoh: [{{"brand": "KFC", "context": "makan siang", "timestamp_seconds": 180}}]
-
-Jika tidak ada brand, kembalikan [] saja.
+Contoh format:
+[{{"brand": "KFC", "context": "makan siang", "timestamp_seconds": 180}}]
+Atau jika hanya nama brand saja:
+["KFC", "McDonald's"]
 
 Transkrip:
 {transcript}
@@ -76,9 +72,15 @@ def brand_tracker(req: BrandRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    transcript_text = format_transcript_text(transcript, max_chars=5000)
+    transcript_text = format_transcript_text(transcript, max_chars=8000)
 
     raw = invoke_llm(BRAND_PROMPT.format(transcript=transcript_text))
 
-    brands = _extract_json(raw)
-    return BrandResponse(brands=[BrandItem(**b) for b in brands])
+    items = _extract_json(raw)
+    brands = []
+    for item in items:
+        if isinstance(item, str):
+            brands.append(BrandItem(brand=item, context="", timestamp_seconds=0))
+        elif isinstance(item, dict):
+            brands.append(BrandItem(**item))
+    return BrandResponse(brands=brands)

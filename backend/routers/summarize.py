@@ -38,7 +38,7 @@ def summarize(req: SummarizeRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    transcript_text = format_transcript_text(transcript, max_chars=5000)
+    transcript_text = format_transcript_text(transcript, max_chars=8000)
 
     enriched = invoke_llm(ENRICH_PROMPT.format(transcript=transcript_text))
 

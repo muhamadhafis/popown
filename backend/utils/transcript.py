@@ -1,6 +1,31 @@
+import time
+import logging
+import requests as requests_lib
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound
+from youtube_transcript_api._errors import NoTranscriptFound, TooManyRequests, YouTubeRequestFailed
 import yt_dlp
+
+from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN
+
+logger = logging.getLogger(__name__)
+
+_cache: dict[str, list[dict]] = {}
+
+
+def _retry(fn, retries=6, base_delay=2):
+    for attempt in range(retries):
+        try:
+            return fn()
+        except (TooManyRequests, YouTubeRequestFailed):
+            if attempt == retries - 1:
+                raise
+            delay = base_delay * (2 ** attempt)
+            time.sleep(delay)
+    return None
+
+
+def _cache_key(video_id: str, languages: list[str]) -> str:
+    return f"{video_id}:{','.join(languages)}"
 
 
 def get_transcript(
@@ -11,13 +36,33 @@ def get_transcript(
     if languages is None:
         languages = ["en", "id"]
 
-    result = _try_youtube_transcript_api(video_id, languages, cookies)
+    key = _cache_key(video_id, languages)
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
+    try:
+        result = _retry(lambda: _try_youtube_transcript_api(video_id, languages, cookies))
+    except Exception:
+        result = None
+
     if result:
+        _cache[key] = result
         return result
 
-    caption_result = _try_ytdlp_captions(video_id, languages)
-    if caption_result:
-        return caption_result
+    try:
+        result = _retry(lambda: _try_ytdlp_captions(video_id, languages))
+    except Exception:
+        result = None
+
+    if result:
+        _cache[key] = result
+        return result
+
+    result = _try_google_api(video_id, languages)
+    if result:
+        _cache[key] = result
+        return result
 
     raise RuntimeError(
         "No accessible transcript found for this video. "
@@ -39,22 +84,26 @@ def _try_youtube_transcript_api(
         if transcript:
             return _format(transcript)
     except NoTranscriptFound:
-        try:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(
-                video_id, **kwargs
-            )
-            for t in transcript_list:
-                if t.is_translatable:
-                    tr = t.translate("en")
-                    data = tr.fetch(**kwargs)
-                    if data:
-                        return _format(data)
-            for t in transcript_list:
-                data = t.fetch(**kwargs)
+        pass
+    except TooManyRequests:
+        raise
+
+    try:
+        transcript_list = YouTubeTranscriptApi.list_transcripts(
+            video_id, **kwargs
+        )
+        for t in transcript_list:
+            if t.is_translatable:
+                tr = t.translate("en")
+                data = tr.fetch(**kwargs)
                 if data:
                     return _format(data)
-        except Exception:
-            pass
+        for t in transcript_list:
+            data = t.fetch(**kwargs)
+            if data:
+                return _format(data)
+    except TooManyRequests:
+        raise
     except Exception:
         pass
 
@@ -68,10 +117,9 @@ def _try_ytdlp_captions(
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitleslangs": languages,
         "skip_download": True,
+        "extract_flat": False,
+        "extractor_args": {"youtube": {"player_client": ["android_vr"]}},
     }
 
     try:
@@ -86,8 +134,9 @@ def _try_ytdlp_captions(
                 if lang in source:
                     for fmt in source[lang]:
                         if fmt.get("ext") == "json3":
-                            import requests
-                            r = requests.get(fmt["url"])
+                            r = requests_lib.get(fmt["url"], timeout=30)
+                            if r.status_code == 429:
+                                raise TooManyRequests()
                             if r.status_code == 200:
                                 data = r.json()
                                 events = data.get("events", [])
@@ -110,6 +159,29 @@ def _try_ytdlp_captions(
     return None
 
 
+def _try_google_api(video_id: str, languages: list[str]) -> list[dict] | None:
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET or not YOUTUBE_REFRESH_TOKEN:
+        return None
+
+    from utils.youtube_api import get_transcript_from_youtube_api
+
+    for lang in languages:
+        try:
+            result = get_transcript_from_youtube_api(
+                video_id=video_id,
+                language=lang,
+                refresh_token=YOUTUBE_REFRESH_TOKEN,
+                client_id=GOOGLE_CLIENT_ID,
+                client_secret=GOOGLE_CLIENT_SECRET,
+            )
+            if result:
+                return result
+        except Exception as exc:
+            logger.warning("YouTube API failed for %s lang=%s: %s", video_id, lang, exc)
+
+    return None
+
+
 def _format(transcript):
     return [
         {
@@ -126,7 +198,10 @@ def format_transcript_text(transcript: list[dict], max_chars: int | None = None)
         f"[{entry['start']:.0f}s] {entry['text']}" for entry in transcript
     )
     if max_chars and len(text) > max_chars:
-        text = text[:max_chars] + "\n...[truncated]"
+        half = max_chars // 2
+        head = text[:half]
+        tail = text[-half:]
+        text = head + "\n...[mid-section truncated]...\n" + tail
     return text
 
 
