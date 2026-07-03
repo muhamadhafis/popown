@@ -23,12 +23,17 @@ class BrandResponse(BaseModel):
     brands: list[BrandItem]
 
 
-BRAND_PROMPT = """Cari brand/merek dari transkrip ini. Output JSON array saja, tanpa teks lain.
+BRAND_PROMPT = """Cari brand/merek yang disebutkan dalam transkrip ini.
+Setiap baris transkrip dimulai dengan penanda waktu seperti `[120s]` yang menunjukkan waktu dalam detik (misal: 120 detik).
+Temukan brand/merek tersebut, konteks kalimatnya, dan catat timestamp waktu kemunculannya (dalam angka detik saja).
 
-Contoh format:
-[{{"brand": "KFC", "context": "makan siang", "timestamp_seconds": 180}}]
-Atau jika hanya nama brand saja:
-["KFC", "McDonald's"]
+Wajib menghasilkan output dalam format JSON array of objects dengan kunci: "brand", "context", dan "timestamp_seconds". Jangan menghasilkan format lain.
+
+Contoh format output:
+[
+  {{"brand": "KFC", "context": "makan siang di restoran cepat saji", "timestamp_seconds": 180.0}},
+  {{"brand": "McDonald's", "context": "membeli ayam gule baru", "timestamp_seconds": 481.0}}
+]
 
 Transkrip:
 {transcript}
@@ -80,7 +85,19 @@ def brand_tracker(req: BrandRequest):
     brands = []
     for item in items:
         if isinstance(item, str):
-            brands.append(BrandItem(brand=item, context="", timestamp_seconds=0))
+            brands.append(BrandItem(brand=item, context="", timestamp_seconds=0.0))
         elif isinstance(item, dict):
-            brands.append(BrandItem(**item))
+            brand_name = item.get("brand") or item.get("name") or ""
+            if not brand_name and len(item.values()) > 0:
+                brand_name = str(list(item.values())[0])
+            
+            context_str = item.get("context") or ""
+            ts = item.get("timestamp_seconds") or item.get("timestamp") or 0.0
+            try:
+                ts = float(ts)
+            except (ValueError, TypeError):
+                ts = 0.0
+            
+            if brand_name:
+                brands.append(BrandItem(brand=str(brand_name), context=str(context_str), timestamp_seconds=ts))
     return BrandResponse(brands=brands)

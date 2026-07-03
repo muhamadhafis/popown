@@ -10,7 +10,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -23,3 +23,6 @@ app.include_router(summarize.router, prefix="/api")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+# Trigger reload for new env config
+

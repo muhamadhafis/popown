@@ -1,165 +1,165 @@
-# YouTube AI Companion
+# Popown – YouTube AI Companion
 
-Backend API untuk Chrome Extension YouTube AI Companion — chatbot, brand tracker, dan summarizer berbasis transkrip YouTube + Ollama.
+Asisten AI berbasis transkrip video + LLM yang berjalan langsung di browser Google Chrome. Popown memungkinkan pengguna melakukan tanya jawab instan tentang isi video YouTube, mendapatkan rangkuman eksekutif, dan melacak mention produk/brand — tanpa perlu meninggalkan halaman YouTube.
 
-## Fitur
+Proyek ini terdiri dari tiga komponen utama: **backend API (FastAPI)**, **ekstensi Chrome (Manifest V3)**, dan **web landing page interaktif (React + Vite + TypeScript)**.
+
+---
+
+## 📁 Struktur Repositori
+
+```
+popown/
+├── backend/                  # FastAPI REST API Backend
+│   ├── main.py               # Entry point server & konfigurasi CORS
+│   ├── routers/              # Router endpoint (chat, brand, summarize)
+│   ├── utils/                # Utilitas transcript & helper
+│   ├── config.py             # Konfigurasi environment (.env loader)
+│   ├── requirements.txt      # Dependensi Python
+│   └── vercel.json           # Konfigurasi deployment Vercel
+│
+└── frontend/
+    ├── landing/              # Web Landing Page (React + Vite + TypeScript)
+    │   ├── src/
+    │   │   ├── components/   # Komponen UI: Navbar, Hero, Features, dll.
+    │   │   ├── types/        # TypeScript types global
+    │   │   └── index.css     # Design system & global styling
+    │   ├── public/           # Aset statis (termasuk popown-extension.zip)
+    │   └── package.json
+    │
+    └── extension/            # Ekstensi Browser Google Chrome (Manifest V3)
+        ├── manifest.json     # Konfigurasi ekstensi
+        ├── popup.html        # UI popup ekstensi
+        ├── popup.js          # Logika pemanggilan API & manipulasi YouTube
+        ├── popup.css         # Styling popup ekstensi
+        └── content.js        # Script injeksi untuk kontrol video YouTube
+```
+
+---
+
+## 🛠️ Panduan Set Up & Menjalankan Lokal
+
+### 1. Backend FastAPI
+
+1. Masuk ke direktori backend:
+   ```bash
+   cd backend
+   ```
+2. Buat virtual environment dan aktifkan:
+   - **Windows (PowerShell)**:
+     ```powershell
+     py -m venv venv
+     .\venv\Scripts\activate
+     ```
+   - **Linux/macOS**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+3. Instal dependensi:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Salin file konfigurasi env:
+   ```bash
+   cp .env.example .env
+   ```
+5. Isi variabel di dalam `.env`:
+   ```
+   OLLAMA_BASE_URL=https://...    # URL endpoint Ollama/LLM Anda
+   OLLAMA_API_KEY=...             # API Key Anda
+   OLLAMA_MODEL=gpt-oss:120b     # Nama model yang digunakan
+   ```
+6. Jalankan server lokal:
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+   *(Server berjalan di `http://localhost:8000`)*
+
+---
+
+### 2. Web Landing Page (React + Vite + TypeScript)
+
+1. Masuk ke folder landing:
+   ```bash
+   cd frontend/landing
+   ```
+2. Instal dependensi:
+   ```bash
+   npm install
+   ```
+3. Jalankan server pengembangan:
+   ```bash
+   npm run dev
+   ```
+   *(Akses di `http://localhost:5173`)*
+
+> **Catatan:** Untuk mengaktifkan tombol unduh ekstensi di landing page, kompres folder `frontend/extension/` menjadi file bernama `popown-extension.zip` dan letakkan di `frontend/landing/public/`. File ini akan otomatis tersedia di URL `/popown-extension.zip`.
+
+---
+
+### 3. Ekstensi Google Chrome
+
+#### Untuk Pengguna Umum (Rekomendasi)
+1. Unduh `popown-extension.zip` dari tombol **Unduh / Instal Ekstensi** di website landing page.
+2. Ekstrak file ZIP ke sebuah folder baru di komputer Anda.
+3. Buka `chrome://extensions` di Google Chrome.
+4. Aktifkan **"Developer mode"** di pojok kanan atas.
+5. Klik **"Load unpacked"** dan pilih folder hasil ekstrak (yang berisi `manifest.json`).
+
+#### Untuk Developer
+1. Buka `chrome://extensions` di Google Chrome.
+2. Aktifkan **"Developer mode"** di pojok kanan atas.
+3. Klik **"Load unpacked"** dan pilih folder `frontend/extension/` dari repositori.
+
+Ekstensi siap! Buka YouTube, klik ikon ekstensi Popown, dan pin ke toolbar agar selalu mudah diakses.
+
+---
+
+## 🚀 Deployment ke Vercel
+
+### A. Deploy Backend (FastAPI)
+
+1. Hubungkan repositori ke akun Vercel dan buat project baru.
+2. Set **Root Directory** ke `backend`.
+3. Di **Environment Variables**, tambahkan:
+   - `OLLAMA_BASE_URL`
+   - `OLLAMA_API_KEY`
+   - `OLLAMA_MODEL`
+4. Klik **Deploy**. Simpan URL backend yang dihasilkan (contoh: `https://popown-backend.vercel.app`).
+
+### B. Deploy Frontend Landing Page (React Vite)
+
+1. Buat project baru di Vercel dengan **Root Directory** `frontend/landing`.
+2. Vercel otomatis mendeteksi preset **Vite** dan menggunakan `npm run build` dengan output folder `dist`.
+3. Di **Environment Variables**, tambahkan:
+   - `VITE_API_URL` = URL backend dari langkah A.
+4. Klik **Deploy**. Pastikan file `popown-extension.zip` sudah ada di folder `public/` sebelum build.
+
+---
+
+## 🔗 Referensi API (Backend)
 
 | Endpoint | Method | Deskripsi |
 |----------|--------|-----------|
-| `/api/chat` | POST | Chat tentang video, time command (`ke menit 3`), scene search (`ke adegan KFC`) |
-| `/api/brand` | POST | Deteksi brand/merek yang disebut dalam video |
-| `/api/summarize` | POST | Rangkuman eksekutif dalam Markdown |
-| `/health` | GET | Health check |
+| `/api/chat` | POST | Chat tentang video, navigasi waktu (`ke menit 3`), pencarian adegan |
+| `/api/brand` | POST | Deteksi brand/merek yang disebutkan dalam video beserta timestamp |
+| `/api/summarize` | POST | Rangkuman eksekutif video dalam format Markdown |
+| `/health` | GET | Health check server |
 
-## Tech Stack
-
-- **FastAPI** — REST API framework
-- **Ollama** (Cloud) — LLM provider (`gpt-oss:120b`)
-- **youtube-transcript-api** / **yt-dlp** — Ekstraksi transkrip YouTube
-- **YouTube Data API v3** (OAuth) — Fallback transkrip (opsional)
-
-## Setup
-
-### 1. Clone & install
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Konfigurasi
-
-```bash
-cp .env.example .env
-```
-
-Isi `.env`:
-
-| Variable | Wajib | Deskripsi |
-|----------|-------|-----------|
-| `OLLAMA_BASE_URL` | ✅ | `https://ollama.com` untuk cloud, `http://localhost:11434` untuk lokal |
-| `OLLAMA_API_KEY` | ✅ | API key dari Ollama Cloud |
-| `OLLAMA_MODEL` | ✅ | `gpt-oss:120b` (atau model lain) |
-| `GOOGLE_CLIENT_ID` | ⬜ | YouTube Data API OAuth — untuk fallback transkrip |
-| `GOOGLE_CLIENT_SECRET` | ⬜ | YouTube Data API OAuth — untuk fallback transkrip |
-| `YOUTUBE_REFRESH_TOKEN` | ⬜ | Hasil dari `python scripts/get_youtube_refresh_token.py` |
-
-> **Catatan**: Fallback YouTube Data API hanya bekerja untuk video sendiri. Untuk video orang lain, gunakan `youtube-transcript-api` (default).
-
-### 3. Jalankan
-
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Atau:
-
-```bash
-python main.py
-```
-
-## API Reference
-
-### `POST /api/chat`
-
-Request body:
-
+### Contoh Request `/api/chat`
 ```json
 {
   "video_id": "xlWhpXdOlTo",
-  "message": "Apa isi video ini?",
+  "message": "Kapan KFC dibahas?",
   "language": "id"
 }
 ```
 
-Fitur pesan:
-
-| Pola | Contoh | Hasil |
-|------|--------|-------|
-| `ke menit N` | `ke menit 3` | `jump_to_seconds: 180` |
-| `ke N` (dengan typo) | `ke mnenit 8`, `ke meint 3` | `jump_to_seconds: 480` |
-| `N` (angka saja) | `5` | `jump_to_seconds: 300` |
-| `ke adegan <brand>` | `ke adegan KFC` | `jump_to_seconds: 93` |
-| `cari bagian <topik>` | `cari bagian Subway` | `jump_to_seconds: 0` |
-
-Response:
-
+### Contoh Response `/api/chat`
 ```json
 {
-  "reply": "Pindah ke menit 3:00",
+  "reply": "KFC dibahas sekitar menit 3:00 ketika presenter mengunjungi gerai pertama.",
   "jump_to_seconds": 180.0
 }
 ```
-
-### `POST /api/brand`
-
-```json
-{
-  "video_id": "xlWhpXdOlTo",
-  "language": "id"
-}
-```
-
-Response:
-
-```json
-{
-  "brands": [
-    { "brand": "KFC", "context": "", "timestamp_seconds": 0.0 },
-    { "brand": "McDonald's", "context": "ayam gule", "timestamp_seconds": 481.0 }
-  ]
-}
-```
-
-### `POST /api/summarize`
-
-```json
-{
-  "video_id": "xlWhpXdOlTo",
-  "language": "id"
-}
-```
-
-Response:
-
-```json
-{
-  "summary": "## Executive Summary …"
-}
-```
-
-## Arsitektur
-
-```
-backend/
-├── main.py                  # Entry point FastAPI
-├── config.py                # Environment variable loader
-├── routers/
-│   ├── chat.py              # POST /api/chat
-│   ├── brand.py             # POST /api/brand
-│   └── summarize.py         # POST /api/summarize
-├── utils/
-│   ├── transcript.py        # Ekstraksi transkrip (yt-api → yt-dlp → google api)
-│   ├── llm.py               # Invoke Ollama
-│   └── youtube_api.py       # YouTube Data API v3 OAuth client
-├── scripts/
-│   └── get_youtube_refresh_token.py  # One-time OAuth setup
-├── .env
-├── .env.example
-└── requirements.txt
-```
-
-### Fallback chain transkrip
-
-1. **youtube-transcript-api** (6x retry, exponential backoff)
-2. **yt-dlp** dengan `android_vr` client (6x retry) — bypass PO Token requirement
-3. **YouTube Data API v3** OAuth (opsional, hanya untuk video sendiri)
-
-## Catatan
-
-- **PO Token**: YouTube baru menerapkan Proof of Origin Token untuk endpoint `timedtext`. Solusinya menggunakan `android_vr` client via yt-dlp.
-- **Rate limit**: Setiap metode punya retry 6x dengan exponential backoff (2s, 4s, 8s, 16s, 32s, 64s).
-- **Cache**: Transkrip di-cache in-memory per `{video_id}:{language}` untuk menghindari fetch ulang.
-- **Model**: `gpt-oss:120b` memiliki context limit ~8000 karakter. Transkrip lebih panjang akan di-sampling (head + tail).
