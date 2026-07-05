@@ -45,7 +45,21 @@ def read_root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    import os
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    cookies_file = os.path.join(current_dir, "yt-cookies.txt")
+    exists = os.path.exists(cookies_file)
+    size = os.path.getsize(cookies_file) if exists else -1
+    return {
+        "status": "ok",
+        "cookies": {
+            "resolved_path": cookies_file,
+            "exists": exists,
+            "size": size,
+            "cwd": os.getcwd()
+        }
+    }
+
 
 
 # Trigger reload for new env config
