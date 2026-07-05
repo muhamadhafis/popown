@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 import requests as requests_lib
@@ -36,6 +37,14 @@ def get_transcript(
     if languages is None:
         languages = ["en", "id"]
 
+    # Automatically resolve yt-cookies.txt in the backend root directory if not specified
+    if cookies is None:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(current_dir)
+        cookies_file = os.path.join(backend_dir, "yt-cookies.txt")
+        if os.path.exists(cookies_file):
+            cookies = cookies_file
+
     key = _cache_key(video_id, languages)
     cached = _cache.get(key)
     if cached is not None:
@@ -51,7 +60,7 @@ def get_transcript(
         return result
 
     try:
-        result = _retry(lambda: _try_ytdlp_captions(video_id, languages))
+        result = _retry(lambda: _try_ytdlp_captions(video_id, languages, cookies=cookies))
     except Exception:
         result = None
 
@@ -111,7 +120,7 @@ def _try_youtube_transcript_api(
 
 
 def _try_ytdlp_captions(
-    video_id: str, languages: list[str]
+    video_id: str, languages: list[str], cookies: str | None = None
 ) -> list[dict] | None:
     url = f"https://www.youtube.com/watch?v={video_id}"
     ydl_opts = {
@@ -121,6 +130,8 @@ def _try_ytdlp_captions(
         "extract_flat": False,
         "extractor_args": {"youtube": {"player_client": ["android_vr"]}},
     }
+    if cookies and os.path.exists(cookies):
+        ydl_opts["cookiefile"] = cookies
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
