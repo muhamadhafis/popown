@@ -3,7 +3,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Detect if running as a popup or side panel
   const urlParams = new URLSearchParams(window.location.search);
-  const isSidePanel = urlParams.get('sidepanel') === 'true';
+  const isSidePanel = urlParams.get('sidepanel') === 'true' || window.innerHeight > 580;
   if (!isSidePanel) {
     document.body.classList.add("is-popup");
   }

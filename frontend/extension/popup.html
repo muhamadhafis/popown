@@ -100,6 +100,7 @@
             <div class="skeleton-card"></div>
             <div class="skeleton-card"></div>
             <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
           </div>
           <div id="brand-list" class="brand-list empty-state">
             Klik tombol "Lacak Brand" di atas untuk menganalisis transkrip.
@@ -115,11 +116,16 @@
             <button id="summarize-btn" class="btn primary btn-sm" disabled>Buat Rangkuman</button>
           </div>
           <!-- Skeleton Loader -->
-          <div id="summary-skeleton" class="skeleton-container hidden">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line short"></div>
+          <div id="summary-skeleton" class="skeleton-container hidden" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="skeleton-line title" style="width: 40%; height: 18px;"></div>
+            <div class="skeleton-line" style="width: 90%;"></div>
+            <div class="skeleton-line" style="width: 95%;"></div>
+            <div class="skeleton-line short" style="width: 60%;"></div>
+            <div style="height: 4px;"></div>
+            <div class="skeleton-line title" style="width: 30%; height: 18px;"></div>
+            <div class="skeleton-line" style="width: 95%;"></div>
+            <div class="skeleton-line" style="width: 85%;"></div>
+            <div class="skeleton-line short" style="width: 50%;"></div>
           </div>
           <div id="summary-content" class="summary-content empty-state">
             Klik tombol "Buat Rangkuman" di atas untuk meringkas video.

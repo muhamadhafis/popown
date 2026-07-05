@@ -45,9 +45,11 @@ export const BrandsPanel: React.FC<BrandsPanelProps> = ({
           {isBrandsLoading ? 'Sedang Melacak...' : 'Lacak Brand'}
         </button>
       </div>
-      <div className={`demo-brands-list ${!brandsFetched || brands.length === 0 ? 'empty' : ''}`}>
+      <div className={`demo-brands-list ${(!brandsFetched || brands.length === 0) && !isBrandsLoading ? 'empty' : ''}`}>
         {isBrandsLoading ? (
           <div className="skeleton-container" style={{ width: '100%' }}>
+            <div className="skeleton-card"></div>
+            <div className="skeleton-card"></div>
             <div className="skeleton-card"></div>
             <div className="skeleton-card"></div>
           </div>

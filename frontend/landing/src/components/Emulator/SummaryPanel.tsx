@@ -299,12 +299,18 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
           {isSummaryLoading ? 'Meringkas...' : 'Buat Rangkuman'}
         </button>
       </div>
-      <div className={`demo-summary-content ${!summaryFetched || !summary ? 'empty' : ''}`}>
+      <div className={`demo-summary-content ${(!summaryFetched || !summary) && !isSummaryLoading ? 'empty' : ''}`}>
         {isSummaryLoading ? (
-          <div className="skeleton-container" style={{ width: '100%' }}>
-            <div className="skeleton-line title"></div>
-            <div className="skeleton-line"></div>
-            <div className="skeleton-line short"></div>
+          <div className="skeleton-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="skeleton-line title" style={{ width: '40%', height: '18px' }}></div>
+            <div className="skeleton-line" style={{ width: '90%' }}></div>
+            <div className="skeleton-line" style={{ width: '95%' }}></div>
+            <div className="skeleton-line short" style={{ width: '60%' }}></div>
+            <div style={{ height: '4px' }}></div>
+            <div className="skeleton-line title" style={{ width: '30%', height: '18px' }}></div>
+            <div className="skeleton-line" style={{ width: '95%' }}></div>
+            <div className="skeleton-line" style={{ width: '85%' }}></div>
+            <div className="skeleton-line short" style={{ width: '50%' }}></div>
           </div>
         ) : !summaryFetched ? (
           'Silakan analisis video dan tekan "Buat Rangkuman" untuk meringkas.'
