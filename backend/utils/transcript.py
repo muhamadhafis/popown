@@ -122,6 +122,8 @@ def _try_youtube_transcript_api(
 def _try_ytdlp_captions(
     video_id: str, languages: list[str], cookies: str | None = None
 ) -> list[dict] | None:
+    import http.cookiejar
+
     url = f"https://www.youtube.com/watch?v={video_id}"
     ydl_opts = {
         "quiet": True,
@@ -130,8 +132,14 @@ def _try_ytdlp_captions(
         "extract_flat": False,
         "extractor_args": {"youtube": {"player_client": ["android_vr"]}},
     }
+    cookies_jar = None
     if cookies and os.path.exists(cookies):
         ydl_opts["cookiefile"] = cookies
+        try:
+            cookies_jar = http.cookiejar.MozillaCookieJar(cookies)
+            cookies_jar.load(ignore_discard=True, ignore_expires=True)
+        except Exception as e:
+            logger.warning("Failed to load cookies into jar: %s", e)
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -145,7 +153,10 @@ def _try_ytdlp_captions(
                 if lang in source:
                     for fmt in source[lang]:
                         if fmt.get("ext") == "json3":
-                            r = requests_lib.get(fmt["url"], timeout=30)
+                            kwargs = {"timeout": 30}
+                            if cookies_jar:
+                                kwargs["cookies"] = cookies_jar
+                            r = requests_lib.get(fmt["url"], **kwargs)
                             if r.status_code == 429:
                                 raise TooManyRequests()
                             if r.status_code == 200:

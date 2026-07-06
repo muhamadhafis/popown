@@ -12,7 +12,7 @@ export const App: React.FC = () => {
   // Config & State
   const [backendUrl, setBackendUrl] = useState<string>(() => {
     const saved = localStorage.getItem('popown_demo_backend_url');
-    return saved || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    return saved || import.meta.env.VITE_API_URL || 'https://popown-backend-eight.vercel.app';
   });
   
   const [videoUrl, setVideoUrl] = useState<string>('');
@@ -232,8 +232,8 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Connection Settings */}
-            <div className="demo-settings-alert">
+            {/* Connection Settings - Hidden */}
+            <div className="demo-settings-alert" style={{ display: 'none' }}>
               <span className="info-icon">ℹ️</span>
               <span>Status Sistem: Terhubung ke **AI Engine**. Anda dapat menyesuaikan alamat server AI jika menggunakan server pribadi:</span>
               <input

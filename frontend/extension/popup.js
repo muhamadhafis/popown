@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // State Variables
   let activeVideoId = null;
-  let backendUrl = localStorage.getItem("popown_backend_url") || "http://localhost:8000";
+  let backendUrl = localStorage.getItem("popown_backend_url") || "https://popown-backend-eight.vercel.app";
   
   // Set initial settings input
   backendUrlInput.value = backendUrl;

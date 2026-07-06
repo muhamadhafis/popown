@@ -10,7 +10,8 @@
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
-    "http://localhost:8000/*"
+    "http://localhost:8000/*",
+    "https://popown-backend-eight.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"
