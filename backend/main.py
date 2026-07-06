@@ -46,10 +46,24 @@ def read_root():
 @app.get("/health")
 def health():
     import os
+    import traceback
+    from utils.transcript import get_transcript
+    
     current_dir = os.path.dirname(os.path.abspath(__file__))
     cookies_file = os.path.join(current_dir, "yt-cookies.txt")
     exists = os.path.exists(cookies_file)
     size = os.path.getsize(cookies_file) if exists else -1
+    
+    test_result = "not run"
+    error_trace = ""
+    
+    try:
+        res = get_transcript("xlWhpXdOlTo", languages=["en", "id"])
+        test_result = f"success: {len(res)} entries fetched"
+    except Exception as e:
+        test_result = f"error: {str(e)}"
+        error_trace = traceback.format_exc()
+        
     return {
         "status": "ok",
         "cookies": {
@@ -57,8 +71,13 @@ def health():
             "exists": exists,
             "size": size,
             "cwd": os.getcwd()
+        },
+        "diagnostic_fetch": {
+            "result": test_result,
+            "traceback": error_trace
         }
     }
+
 
 
 
